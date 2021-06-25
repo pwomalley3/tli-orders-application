@@ -18,7 +18,7 @@ The `application.properties` includes some default settings:
 * `spring.datasource`: H2 configuration
   * Once the app is running, an H2 console can be viewed in the browser: `http://localhost:8085/h2-console/`
 
-There starter schema and data in the `resources` folder in the `data.sql` and `schema.sql` files. Please add any 
+There are starter schema and data in the `resources` folder in the `data.sql` and `schema.sql` files. Please add any 
 schema and data changes in these files.
 
 Please make a fork of this repository to hold your solution and send a link to your fork once development is complete.
