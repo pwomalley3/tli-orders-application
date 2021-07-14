@@ -15,10 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Stream;
+import java.util.*;
 
 @Service
 public class OrdersService {
@@ -30,24 +27,42 @@ public class OrdersService {
     LineItemRepository itemRepo;
 
     public ResponseEntity<OrdersResponse> viewOrder(Long orderId) {
-        Orders order = orderRepo.findById(orderId).get();
+        Orders order = fetchAndValidateOrder(orderId);
+        if (order == null) {
+            return new ResponseEntity<>(new OrdersResponse(), HttpStatus.NO_CONTENT);
+        }
         Iterable<Object[]> itemIterable = itemRepo.findAllByOrderId(orderId);
         List<LineItemResponse> itemList = mapLineItemResponse(itemIterable);
         OrdersResponse response = mapOrdersResponse(order, itemList);
-
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     private List<LineItemResponse> mapLineItemResponse(Iterable<Object[]> itemIterable) {
         List<LineItemResponse> itemList = new ArrayList<>();
         for (Object[] objectArray : itemIterable) {
-            LineItemResponse lineItem = new LineItemResponse();
-            lineItem.setNumber((Integer) objectArray[0]);
-            lineItem.setOrderId((Long) objectArray[1]);
-            lineItem.setName((String) objectArray[2]);
-            lineItem.setPrice((Double) objectArray[3]);
-            lineItem.setQuantity((Double) objectArray[4]);
+            LineItemResponse lineItem = new LineItemResponse((Integer) objectArray[0],
+                    (Long) objectArray[1],
+                    (String) objectArray[2],
+                    (Double) objectArray[3],
+                    (Double) objectArray[4]);
             itemList.add(lineItem);
+        }
+        return itemList;
+    }
+
+    private List<LineItem> mapLineItem(Iterable<Object[]> itemIterable) {
+        List<LineItem> itemList = new ArrayList<>();
+        for (Object[] objectArray : itemIterable) {
+            LineItem item = new LineItem((Integer) objectArray[0],
+                    (Long) objectArray[1],
+                    (String) objectArray[2],
+                    (Double) objectArray[3],
+                    (Double) objectArray[4],
+                    (Timestamp) objectArray[5],
+                    (Integer) objectArray[6],
+                    (Timestamp) objectArray[7],
+                    (Integer) objectArray[8]);
+            itemList.add(item);
         }
         return itemList;
     }
@@ -98,11 +113,19 @@ public class OrdersService {
     }
 
     public ResponseEntity<OrdersResponse> cancelOrder(Long orderId) {
-        OrdersResponse response = new OrdersResponse();
+        Orders order = fetchAndValidateOrder(orderId);
+        if (order == null) {
+            return new ResponseEntity<>(new OrdersResponse(), HttpStatus.NO_CONTENT);
+        }
+        Iterable<Object[]> itemIterable = itemRepo.findAllByOrderId(orderId);
+        OrdersResponse response = new OrdersResponse(order.getId(),
+                OrderStatus.getValueByIndex(order.getStatusId()),
+                mapLineItemResponse(itemIterable),
+                order.getCreatedDate());
 
-        Orders order = orderRepo.findById(orderId).get();
         if (!Objects.equals(order.getStatusId(), OrderStatus.T.getIndex())
-                && !Objects.equals(order.getStatusId(), OrderStatus.D.getIndex())) {
+                && !Objects.equals(order.getStatusId(), OrderStatus.D.getIndex())
+                && !Objects.equals(order.getStatusId(), OrderStatus.C.getIndex())) {
             order.setStatusId(OrderStatus.C.getIndex());
         } else if (Objects.equals(order.getStatusId(), OrderStatus.C.getIndex())) {
             return new ResponseEntity<>(response, HttpStatus.OK);
@@ -114,8 +137,65 @@ public class OrdersService {
         order = orderRepo.save(order);
 
         response.setStatus(OrderStatus.getValueByIndex(order.getStatusId()));
-        response.setId(order.getId());
-        response.setDatePlaced(order.getCreatedDate());
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    public ResponseEntity<OrdersResponse> changeQuantity(Long orderId, Integer itemNumber, Double quantity) {
+        Orders order = fetchAndValidateOrder(orderId);
+        if (order == null) {
+            return new ResponseEntity<>(new OrdersResponse(), HttpStatus.NO_CONTENT);
+        }
+        Iterable<Object[]> itemIterable = itemRepo.findAllByOrderId(orderId);
+        OrdersResponse response = new OrdersResponse(order.getId(),
+                OrderStatus.getValueByIndex(order.getStatusId()),
+                mapLineItemResponse(itemIterable),
+                order.getCreatedDate());
+
+        List<LineItem> itemList = this.mapLineItem(itemIterable);
+        if (quantity >= 1 && itemNumber <= itemList.size() && itemNumber > 0) {
+            itemList.get(itemNumber - 1).setQuantity(quantity);
+        } else {
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+        itemRepo.saveAll(itemList);
+        itemIterable = itemRepo.findAllByOrderId(orderId);
+
+        response.setLineItems(mapLineItemResponse(itemIterable));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    public ResponseEntity<OrdersResponse> removeLineItem(Long orderId, Integer itemNumber) {
+        Iterable<Object[]> itemIterable;
+        Orders order = fetchAndValidateOrder(orderId);
+        if (order == null) {
+            return new ResponseEntity<>(new OrdersResponse(), HttpStatus.NO_CONTENT);
+        }
+
+        itemIterable = itemRepo.findAllByOrderId(orderId);
+        List<LineItemResponse> responseList = this.mapLineItemResponse(itemIterable);
+        OrdersResponse response = new OrdersResponse(order.getId(),
+                OrderStatus.getValueByIndex(order.getStatusId()),
+                responseList,
+                order.getCreatedDate());
+
+        if (itemNumber <= responseList.size() && itemNumber > 0) {
+            itemRepo.removeLineItemByOrderIdAndNumber(orderId, itemNumber);
+        } else {
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
+        itemIterable = itemRepo.findAllByOrderId(orderId);
+        response.setLineItems(mapLineItemResponse(itemIterable));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    private Orders fetchAndValidateOrder(Long orderId) {
+        Orders order;
+        try {
+            order = orderRepo.findById(orderId).get();
+        } catch (NoSuchElementException e) {
+            return null;
+        }
+        return order;
     }
 }

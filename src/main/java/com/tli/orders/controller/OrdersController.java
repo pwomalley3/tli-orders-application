@@ -30,13 +30,16 @@ public class OrdersController {
         return this.ordersService.cancelOrder(orderId);
     }
 
-    @PostMapping(value = "/change")
-    public ResponseEntity<OrdersResponse> changeQuantity(@RequestBody OrdersRequest ordersRequest) {
-        return this.ordersService.changeQuantity(ordersRequest);
+    @GetMapping(value = "/change")
+    public ResponseEntity<OrdersResponse> changeQuantity(@RequestParam Long orderId,
+                                                         @RequestParam Integer itemNumber,
+                                                         @RequestParam Double quantity) {
+        return this.ordersService.changeQuantity(orderId, itemNumber, quantity);
     }
 
     @GetMapping(value = "/remove")
-    public ResponseEntity<OrdersResponse> removeLineItem(@RequestParam Long orderId, Integer itemNumber) {
+    public ResponseEntity<OrdersResponse> removeLineItem(@RequestParam Long orderId,
+                                                         @RequestParam Integer itemNumber) {
         return this.ordersService.removeLineItem(orderId, itemNumber);
     }
 }
