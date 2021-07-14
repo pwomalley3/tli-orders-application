@@ -2,9 +2,9 @@
 
 #### Problem Statement
 
-Create REST API for an order management application to be consumed by an Angular front-end.
+Create REST API for an orders management application to be consumed by an Angular front-end.
 
-Orders represent requests for the purchase of different products represented as line items on an order.
+Orders represent requests for the purchase of different products represented as line items on an orders.
 
 #### Application Set Up
 
@@ -25,16 +25,16 @@ Please make a fork of this repository to hold your solution and send a link to y
 
 #### Requirements
 
-* Order: Each order should have an order id, status, and line items along with a date placed timestamp
+* Order: Each orders should have an orders id, status, and line items along with a date placed timestamp
 * Line Item: Each line item should have a number, name of the product, price, and quantity
-  * Number should be unique only within each order
+  * Number should be unique only within each orders
   * Price should not be negative
   * Quantity should be at least 1
-  * A line item should not exist without an order
-* We should be able to place an order, cancel an order, and view an order
+  * A line item should not exist without an orders
+* We should be able to place an orders, cancel an orders, and view an orders
 * Orders that are In Transit or Delivered cannot be canceled
-* We should be able to change the quantity of a line item on an existing order
-* We should be able to remove a line item from an existing order
+* We should be able to change the quantity of a line item on an existing orders
+* We should be able to remove a line item from an existing orders
 
 #### Supported Operations
 
@@ -48,7 +48,7 @@ Please use consistent naming conventions for each endpoint.
 
 **Output**
 
-Each operation should return a view of the order along with its line items.
+Each operation should return a view of the orders along with its line items.
 
 ##### PLACE ORDER EXAMPLE
 
@@ -111,5 +111,5 @@ These should only be done if there is time left.
 
 _Please Note_: these requirements may need some additional schema.
 
-* Add support for attaching an order to a customer
+* Add support for attaching an orders to a customer
 * Add ability to view all orders for a customer 
